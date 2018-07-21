@@ -1,6 +1,26 @@
+### Cardboard Reality ###
+Assets/"iOS Project Builder"/
 
-# Created by https://www.gitignore.io/api/unity
+#### Vim ###
+#
+# Swap
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
 
+# Session
+Session.vim
+
+# Temporary
+.netrwhist
+*~
+# Auto-generated tag files
+tags
+# Persistent undo
+[._]*.un~
+ 
 ### Unity ###
 [Ll]ibrary/
 [Tt]emp/
@@ -38,6 +58,5 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
-
 
 # End of https://www.gitignore.io/api/unity
