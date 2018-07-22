@@ -1,5 +1,7 @@
 ### Cardboard Reality ###
 *.exe
+Assets/AR_Assets/
+/Assets/Mirza Beig/
 
 #### Vim ###
 #
