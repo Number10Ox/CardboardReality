@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<VuforiaUnityInfo>
+    <TargetSet toolVersion="" version="6.0"><VuMark name="CthulhuVuMarkFix2" previewImage="8125503c34224150a840ff2a68e2820b_scaled.png" targetId="8125503c34224150a840ff2a68e2820b" version="9.0">
+            <Shape bbox2D="0 0 252 145" origin="127.26 65.101" />
+            <Code IDlength="14" IDtype="numeric" MaxID="9999" />
+        </VuMark>
+    </TargetSet>
+</VuforiaUnityInfo>

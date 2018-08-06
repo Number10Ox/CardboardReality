@@ -2,6 +2,8 @@
 *.exe
 Assets/AR_Assets/
 /Assets/Mirza Beig/
+/Assets/TextMesh Pro/
+XcodeProject/
 
 #### Vim ###
 #

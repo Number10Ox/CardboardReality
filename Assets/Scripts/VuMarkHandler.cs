@@ -6,6 +6,7 @@ Vuforia is a trademark of PTC Inc., registered in the United States and other
 countries.
 ===============================================================================*/
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Vuforia;
 
@@ -14,30 +15,29 @@ using Vuforia;
 /// </summary>
 public class VuMarkHandler : MonoBehaviour
 {
-    #region PUBLIC_MEMBER_VARIABLES
-
     [System.Serializable]
     public class TargetInfo
     {
         public string vumarkId;           
         public GameObject obj;
+        public float xOffset;
+        public float yOffset;
+        public float zOffset;
     }
 
     public TargetInfo[] targets;
 
-    #endregion // PUBLIC_MEMBER_VARIABLES
-
-    #region PRIVATE_MEMBER_VARIABLES
+    const float FILTER_DEFAULT_ALPHA = 0.25f; // if ALPHA = 1 OR 0, no filter applies.
+    public float filterAlpha = FILTER_DEFAULT_ALPHA;
+    public bool useLowPassFilter = true;
+    public bool adjustRotation = true;
 
     // PanelShowHide m_IdPanel;
     VuMarkManager m_VuMarkManager;
     VuMarkTarget m_ClosestVuMark;
     VuMarkTarget m_CurrentVuMark;
 
-    #endregion // PRIVATE_MEMBER_VARIABLES
-
-
-    #region UNITY_MONOBEHAVIOUR_METHODS
+    IDictionary<string, Vector3> vuMarkPositions = new Dictionary<string, Vector3>();
 
     void Start()
     {
@@ -61,10 +61,6 @@ public class VuMarkHandler : MonoBehaviour
         m_VuMarkManager.UnregisterVuMarkLostCallback(OnVuMarkLost);
     }
 
-    #endregion // UNITY_MONOBEHAVIOUR_METHODS
-
-    #region PUBLIC_METHODS
-
     /// <summary>
     /// This method will be called whenever a new VuMark is detected
     /// </summary>
@@ -84,29 +80,48 @@ public class VuMarkHandler : MonoBehaviour
         GameObject associatedObject = FindObjectForVuMark(vuMarkId);
         if (associatedObject != null)
         {
+            vuMarkPositions.Remove(vuMarkId);
             associatedObject.SetActive(false);
         }
     }
-
-    #endregion // PUBLIC_METHODS
-
-    #region PRIVATE_METHODS
 
     void UpdateActiveObjects()
     {
         foreach (var bhvr in m_VuMarkManager.GetActiveBehaviours())
         {
             string vuMarkId = GetVuMarkId(bhvr.VuMarkTarget);
-            GameObject associatedObject = FindObjectForVuMark(vuMarkId);
+            float xOffset;
+            float yOffset;
+            float zOffset;
+            GameObject associatedObject = FindObjectAndOffsetsForVuMark(vuMarkId, out xOffset, out yOffset, out zOffset);
             if (associatedObject != null)
             {
                 associatedObject.SetActive(true);
-                Vector3 vuMarkPosition = bhvr.transform.position;
                 Quaternion vuMarkRotation = bhvr.transform.rotation;
                 Quaternion zInverted = Quaternion.AngleAxis(-180.0f, Vector3.up);
-                //vuMarkPosition.z += .25f;
+
+                Vector3 vuMarkPosition;
+                if (!vuMarkPositions.ContainsKey(vuMarkId))
+                {
+                    vuMarkPosition = bhvr.transform.position;
+                }
+                else
+                {
+                    vuMarkPosition.x = vuMarkPositions[vuMarkId].x + filterAlpha * (bhvr.transform.position.x - vuMarkPositions[vuMarkId].x);
+                    vuMarkPosition.y = vuMarkPositions[vuMarkId].y + filterAlpha * (bhvr.transform.position.y - vuMarkPositions[vuMarkId].y);
+                    vuMarkPosition.z = vuMarkPositions[vuMarkId].z + filterAlpha * (bhvr.transform.position.z - vuMarkPositions[vuMarkId].z);
+                }
+
+                vuMarkPositions[vuMarkId] = vuMarkPosition;
+                vuMarkPosition.x += xOffset;
+                vuMarkPosition.y += yOffset;
+                vuMarkPosition.z += zOffset;
+
                 associatedObject.transform.position = vuMarkPosition;
-                associatedObject.transform.rotation = bhvr.transform.rotation;// * zInverted;
+                if (adjustRotation)
+                {
+                    associatedObject.transform.rotation = bhvr.transform.rotation;// * zInverted; Don't seem to want this
+                }
             }
             else
             {
@@ -244,6 +259,27 @@ public class VuMarkHandler : MonoBehaviour
         return null;
     }
 
+    GameObject FindObjectAndOffsetsForVuMark(string vuMarkId, out float xOffset, out float yOffset, out float zOffset)
+    {
+        // TODO Could create associative array
+        for (int i = 0; i < targets.Length; i++)
+        {
+            string targetVuMarkId = targets[i].vumarkId;
+            if (targetVuMarkId == vuMarkId)
+            {
+                xOffset = targets[i].xOffset;
+                yOffset = targets[i].yOffset;
+                zOffset = targets[i].zOffset;
+                return targets[i].obj;
+            }
+        }
+
+        xOffset = 0.0f;
+        yOffset = 0.0f;
+        zOffset = 0.0f;
+        return null;
+    }
+
     void HideAllGameObjects()
     {
         for (int i = 0; i < targets.Length; i++)
@@ -255,6 +291,4 @@ public class VuMarkHandler : MonoBehaviour
             }
         }
     }
-
-    #endregion // PRIVATE_METHODS
 }

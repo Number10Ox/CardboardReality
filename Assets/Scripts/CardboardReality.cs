@@ -36,14 +36,20 @@ public class CardboardReality : MonoBehaviour
             }
         }
         */
-        IEnumerable<CameraDevice.CameraField> fields = CameraDevice.Instance.GetCameraFields();
-        foreach (CameraDevice.CameraField f in fields)
-        {
-            Debug.Log("key; " + f.Key + ", type :" + f.Type);
-        }
 
-        ObjectTracker tracker = TrackerManager.Instance.GetTracker<ObjectTracker>();
-        tracker.PersistExtendedTracking(false);
+        //Debug.Log("Camera Fields:");
+        //IEnumerable<CameraDevice.CameraField> fields = CameraDevice.Instance.GetCameraFields();
+        //foreach (CameraDevice.CameraField f in fields)
+        //{
+        //    Debug.Log("key: " + f.Key + ", type:" + f.Type);
+        //}
+
+        //ObjectTracker tracker = TrackerManager.Instance.GetTracker<ObjectTracker>();
+        //tracker.PersistExtendedTracking(false);
+
+        //CameraDevice.VideoModeData vmd;
+        //vmd = CameraDevice.Instance.GetVideoMode(CameraDevice.CameraDeviceMode.MODE_OPTIMIZE_QUALITY);
+        //Debug.Log("Dimensions: " + vmd.width + "x" + vmd.height);
     }
     
     private void OnCommand(string command)
