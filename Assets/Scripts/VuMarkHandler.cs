@@ -8,6 +8,7 @@ countries.
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Vatio.Filters;
 using Vuforia;
 
 /// <summary>
@@ -15,6 +16,8 @@ using Vuforia;
 /// </summary>
 public class VuMarkHandler : MonoBehaviour
 {
+    const float FILTER_ALPHA = 0.15f; // if ALPHA = 1 OR 0, no filter applies.
+
     [System.Serializable]
     public class TargetInfo
     {
@@ -27,17 +30,17 @@ public class VuMarkHandler : MonoBehaviour
 
     public TargetInfo[] targets;
 
-    const float FILTER_DEFAULT_ALPHA = 0.25f; // if ALPHA = 1 OR 0, no filter applies.
-    public float filterAlpha = FILTER_DEFAULT_ALPHA;
-    public bool useLowPassFilter = true;
+    public bool filterPosition = false;
+    public bool filterRotation = false;
+
     public bool adjustRotation = true;
 
-    // PanelShowHide m_IdPanel;
     VuMarkManager m_VuMarkManager;
     VuMarkTarget m_ClosestVuMark;
     VuMarkTarget m_CurrentVuMark;
 
-    IDictionary<string, Vector3> vuMarkPositions = new Dictionary<string, Vector3>();
+    IDictionary<string, LowPassFilter<Vector3>> vuMarkPositionFilters = new Dictionary<string, LowPassFilter<Vector3> >();
+    IDictionary<string, LowPassFilter<Quaternion>> vuMarkRotationFilters = new Dictionary<string, LowPassFilter<Quaternion> >();
 
     void Start()
     {
@@ -80,7 +83,8 @@ public class VuMarkHandler : MonoBehaviour
         GameObject associatedObject = FindObjectForVuMark(vuMarkId);
         if (associatedObject != null)
         {
-            vuMarkPositions.Remove(vuMarkId);
+            vuMarkPositionFilters.Remove(vuMarkId);
+            vuMarkRotationFilters.Remove(vuMarkId);
             associatedObject.SetActive(false);
         }
     }
@@ -97,30 +101,56 @@ public class VuMarkHandler : MonoBehaviour
             if (associatedObject != null)
             {
                 associatedObject.SetActive(true);
-                Quaternion vuMarkRotation = bhvr.transform.rotation;
-                Quaternion zInverted = Quaternion.AngleAxis(-180.0f, Vector3.up);
 
+                // Position
                 Vector3 vuMarkPosition;
-                if (!vuMarkPositions.ContainsKey(vuMarkId))
+                if (filterPosition)
                 {
-                    vuMarkPosition = bhvr.transform.position;
+                    if (vuMarkPositionFilters.ContainsKey(vuMarkId))
+                    {
+                        LowPassFilter<Vector3> positionFilter = vuMarkPositionFilters[vuMarkId];
+                        vuMarkPosition = positionFilter.Append(bhvr.transform.position);
+                    }
+                    else
+                    {
+                        LowPassFilter<Vector3> positionFilter = new LowPassFilter<Vector3>(FILTER_ALPHA, transform.position);
+                        vuMarkPositionFilters[vuMarkId] = positionFilter;
+                        vuMarkPosition = bhvr.transform.position;
+                    }
                 }
                 else
                 {
-                    vuMarkPosition.x = vuMarkPositions[vuMarkId].x + filterAlpha * (bhvr.transform.position.x - vuMarkPositions[vuMarkId].x);
-                    vuMarkPosition.y = vuMarkPositions[vuMarkId].y + filterAlpha * (bhvr.transform.position.y - vuMarkPositions[vuMarkId].y);
-                    vuMarkPosition.z = vuMarkPositions[vuMarkId].z + filterAlpha * (bhvr.transform.position.z - vuMarkPositions[vuMarkId].z);
+                    vuMarkPosition = bhvr.transform.position;
                 }
 
-                vuMarkPositions[vuMarkId] = vuMarkPosition;
                 vuMarkPosition.x += xOffset;
                 vuMarkPosition.y += yOffset;
                 vuMarkPosition.z += zOffset;
-
                 associatedObject.transform.position = vuMarkPosition;
+
+                // Rotation
                 if (adjustRotation)
                 {
-                    associatedObject.transform.rotation = bhvr.transform.rotation;// * zInverted; Don't seem to want this
+                    Quaternion zInverted = Quaternion.AngleAxis(-180.0f, Vector3.up);
+
+                    if (filterRotation)
+                    {
+                        if (vuMarkRotationFilters.ContainsKey(vuMarkId))
+                        {
+                            LowPassFilter<Quaternion> rotationFilter = vuMarkRotationFilters[vuMarkId];
+                            associatedObject.transform.rotation = rotationFilter.Append(bhvr.transform.rotation);
+                        }
+                        else
+                        {
+                            LowPassFilter<Quaternion> rotationFilter = new LowPassFilter<Quaternion>(FILTER_ALPHA, bhvr.transform.rotation);
+                            vuMarkRotationFilters[vuMarkId] = rotationFilter;
+                            associatedObject.transform.rotation = bhvr.transform.rotation;
+                        }
+                    }
+                    else
+                    {
+                        associatedObject.transform.rotation = bhvr.transform.rotation;// * zInverted; Don't seem to want this
+                    }
                 }
             }
             else
